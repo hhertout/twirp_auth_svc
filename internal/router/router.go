@@ -6,6 +6,7 @@ import (
 
 	"github.com/hhertout/twirp_auth/internal/hooks"
 	"github.com/hhertout/twirp_auth/internal/middleware"
+	"github.com/hhertout/twirp_auth/internal/repository"
 	"github.com/hhertout/twirp_auth/internal/server"
 	"github.com/hhertout/twirp_auth/protobuf"
 	"github.com/twitchtv/twirp"
@@ -13,7 +14,14 @@ import (
 )
 
 func GetRouter(logger *zap.Logger) *http.ServeMux {
-	server := &server.AuthenticationServer{}
+	r, err := repository.NewUserRepository(nil)
+	if err != nil {
+		logger.Fatal("Error during the creation of the repository", zap.Error(err))
+	}
+
+	server := &server.AuthenticationServer{
+		UserRepository: r,
+	}
 
 	handler := protobuf.NewAuthenticationServiceServer(
 		server,
