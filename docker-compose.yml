@@ -1,0 +1,12 @@
+services:
+  app:
+    command: 
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./internal:/app/internal
+      - ./cmd:/app/cmd
+      - ./pb:/app/pb
+    env_file:
+        - .env
