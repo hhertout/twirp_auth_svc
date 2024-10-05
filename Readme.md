@@ -2,13 +2,9 @@
 
 `brew install protobuf`
 
-`go install github.com/twitchtv/twirp/protoc-gen-twirp@latest`
-`go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`
+`make proto_install` to install proto bin locally.
 
-To add in your zshrc : 
-
-`export PATH="~/go/bin:$PATH"`
-`source ~/.zshrc`
+It will create a bin directory, witch it gitignore by default.
 
 # Generate protobuf
 

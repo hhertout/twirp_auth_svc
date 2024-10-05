@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/hhertout/twirp_example/internal/router"
+	"github.com/hhertout/twirp_auth/internal/router"
 	"go.uber.org/zap"
 )
 
@@ -24,6 +24,6 @@ func main() {
 		logger.Sugar().Info("⚠️ Caution : The server will be running under development mode 🔨🔨")
 	}
 
-	logger.Sugar().Info("🚀 Server running on port %d ! \n", port)
+	logger.Sugar().Info("🚀 Server running on port", port)
 	http.ListenAndServe(fmt.Sprintf("%v:%v", "0.0.0.0", port), router)
 }

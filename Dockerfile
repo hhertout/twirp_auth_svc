@@ -17,6 +17,6 @@ COPY . .
 
 RUN go mod tidy
 
-RUN go build -o main cmd/api/main.go
+RUN make build
 
 CMD ["make", "watch"]

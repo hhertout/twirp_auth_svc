@@ -2,32 +2,18 @@ package hooks
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/twitchtv/twirp"
 	"go.uber.org/zap"
 )
 
-type LoggerContextKey string
+type ServerContextKey string
 
 func NewLoggingServerHooks(l *zap.Logger) *twirp.ServerHooks {
 	return &twirp.ServerHooks{
 		RequestReceived: func(ctx context.Context) (context.Context, error) {
-			ctx = context.WithValue(ctx, LoggerContextKey("time_taken"), time.Now())
-
-			clientIP := "unknown"
-			userAgent := "unknown"
-			if md, ok := twirp.HTTPRequestHeaders(ctx); ok {
-				clientIP = md.Get("X-Forwarded-For")
-				if clientIP == "" {
-					clientIP = md.Get("Remote-Addr")
-				}
-				userAgent = md.Get("User-Agent")
-			}
-			ctx = context.WithValue(ctx, LoggerContextKey("client_ip"), clientIP)
-			ctx = context.WithValue(ctx, LoggerContextKey("user_agent"), userAgent)
-
+			ctx = context.WithValue(ctx, ServerContextKey("time_taken"), time.Now())
 			return ctx, nil
 		},
 		RequestRouted: func(ctx context.Context) (context.Context, error) {
@@ -38,20 +24,27 @@ func NewLoggingServerHooks(l *zap.Logger) *twirp.ServerHooks {
 			return ctx
 		},
 		ResponseSent: func(ctx context.Context) {
-			start, ok := ctx.Value(LoggerContextKey("time_taken")).(time.Time)
-			if !ok {
-				log.Println("start_time not found in context")
-				return
+			clientIP, _ := ctx.Value(ServerContextKey("x-forwarded-for")).(string)
+			if clientIP == "" {
+				clientIP, _ = ctx.Value(ServerContextKey("remote-addr")).(string)
 			}
-			userAgent, _ := ctx.Value(LoggerContextKey("user_agent")).(string)
-			clientIP, _ := ctx.Value(LoggerContextKey("client_ip")).(string)
+			if clientIP == "" {
+				clientIP = "unknown"
+			}
+
+			userAgent, _ := ctx.Value(ServerContextKey("user-agent")).(string)
+			route, _ := ctx.Value(ServerContextKey("route")).(string)
 			method, _ := twirp.MethodName(ctx)
+			service, _ := twirp.ServiceName(ctx)
 			status, _ := twirp.StatusCode(ctx)
+			start, _ := ctx.Value(ServerContextKey("time_taken")).(time.Time)
 
 			logFields := []zap.Field{
+				zap.String("route", route),
 				zap.String("user_agent", userAgent),
 				zap.String("client_ip", clientIP),
 				zap.String("status", status),
+				zap.String("service", service),
 				zap.String("method", method),
 				zap.Duration("time_taken", time.Since(start)),
 			}
