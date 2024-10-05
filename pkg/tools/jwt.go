@@ -15,10 +15,16 @@ type JWTServiceInterface interface {
 
 type JWTService struct{}
 
+// NewJWTService creates a new instance of JWTService.
+// Returns a pointer to the newly created JWTService.
 func NewJWTService() *JWTService {
 	return &JWTService{}
 }
 
+// Generate creates a JWT token for a given user.
+// Uses an environment variable "JWT_SECRET" as the secret key.
+// The token expires in 20 days from the time of generation.
+// Returns the signed JWT token and an error if any occurs.
 func (j *JWTService) Generate(user string) (string, error) {
 	key := os.Getenv("JWT_SECRET")
 	if key == "" {
@@ -42,6 +48,9 @@ func (j *JWTService) Generate(user string) (string, error) {
 	return signedToken, nil
 }
 
+// Verify checks if a given JWT token is valid.
+// Uses an environment variable "JWT_SECRET" as the secret key.
+// Returns a boolean indicating if the token is valid, the token claims, and an error if any occurs.
 func (j *JWTService) Verify(tokenString string) (bool, jwt.RegisteredClaims, error) {
 	key := os.Getenv("JWT_SECRET")
 	if key == "" {

@@ -11,6 +11,10 @@ generate:
 	@echo "Generating protobuf files for /rpc$(file)..."
 	@protoc --go_out=. --twirp_out=. rpc$(file)
 
+migration-generate:
+	@echo "Generate migration in ./migrations"
+	@touch migrations/`date '+%Y-%m-%d_%s'`_migration.sql
+
 build:
 	@echo "Building..."
 	@go build -o tmp/main cmd/api/main.go
@@ -28,6 +32,10 @@ test:
 clean:
 	@echo "Cleaning..."
 	@rm -f main
+
+update:
+	@echo "Updating dependencies..."
+	@go get -u ./...
 
 # Live Reload
 watch:

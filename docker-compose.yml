@@ -8,6 +8,8 @@ services:
       - ./internal:/app/internal
       - ./cmd:/app/cmd
       - ./protobuf:/app/protobuf
+      - ./pkg:/app/pkg
+      - ./migrations:/app/migrations
     env_file:
         - .env
 
