@@ -35,6 +35,8 @@ type AuthenticationService interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
+
+	CheckToken(context.Context, *CheckTokenRequest) (*CheckTokenResponse, error)
 }
 
 // =====================================
@@ -43,7 +45,7 @@ type AuthenticationService interface {
 
 type authenticationServiceProtobufClient struct {
 	client      HTTPClient
-	urls        [2]string
+	urls        [3]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -71,9 +73,10 @@ func NewAuthenticationServiceProtobufClient(baseURL string, client HTTPClient, o
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "auth", "AuthenticationService")
-	urls := [2]string{
+	urls := [3]string{
 		serviceURL + "Login",
 		serviceURL + "Register",
+		serviceURL + "CheckToken",
 	}
 
 	return &authenticationServiceProtobufClient{
@@ -176,13 +179,59 @@ func (c *authenticationServiceProtobufClient) callRegister(ctx context.Context, 
 	return out, nil
 }
 
+func (c *authenticationServiceProtobufClient) CheckToken(ctx context.Context, in *CheckTokenRequest) (*CheckTokenResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "auth")
+	ctx = ctxsetters.WithServiceName(ctx, "AuthenticationService")
+	ctx = ctxsetters.WithMethodName(ctx, "CheckToken")
+	caller := c.callCheckToken
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *CheckTokenRequest) (*CheckTokenResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*CheckTokenRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*CheckTokenRequest) when calling interceptor")
+					}
+					return c.callCheckToken(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*CheckTokenResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*CheckTokenResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *authenticationServiceProtobufClient) callCheckToken(ctx context.Context, in *CheckTokenRequest) (*CheckTokenResponse, error) {
+	out := new(CheckTokenResponse)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
 // =================================
 // AuthenticationService JSON Client
 // =================================
 
 type authenticationServiceJSONClient struct {
 	client      HTTPClient
-	urls        [2]string
+	urls        [3]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -210,9 +259,10 @@ func NewAuthenticationServiceJSONClient(baseURL string, client HTTPClient, opts 
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "auth", "AuthenticationService")
-	urls := [2]string{
+	urls := [3]string{
 		serviceURL + "Login",
 		serviceURL + "Register",
+		serviceURL + "CheckToken",
 	}
 
 	return &authenticationServiceJSONClient{
@@ -301,6 +351,52 @@ func (c *authenticationServiceJSONClient) Register(ctx context.Context, in *Regi
 func (c *authenticationServiceJSONClient) callRegister(ctx context.Context, in *RegisterRequest) (*RegisterResponse, error) {
 	out := new(RegisterResponse)
 	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *authenticationServiceJSONClient) CheckToken(ctx context.Context, in *CheckTokenRequest) (*CheckTokenResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "auth")
+	ctx = ctxsetters.WithServiceName(ctx, "AuthenticationService")
+	ctx = ctxsetters.WithMethodName(ctx, "CheckToken")
+	caller := c.callCheckToken
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *CheckTokenRequest) (*CheckTokenResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*CheckTokenRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*CheckTokenRequest) when calling interceptor")
+					}
+					return c.callCheckToken(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*CheckTokenResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*CheckTokenResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *authenticationServiceJSONClient) callCheckToken(ctx context.Context, in *CheckTokenRequest) (*CheckTokenResponse, error) {
+	out := new(CheckTokenResponse)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
 		if !ok {
@@ -417,6 +513,9 @@ func (s *authenticationServiceServer) ServeHTTP(resp http.ResponseWriter, req *h
 		return
 	case "Register":
 		s.serveRegister(ctx, resp, req)
+		return
+	case "CheckToken":
+		s.serveCheckToken(ctx, resp, req)
 		return
 	default:
 		msg := fmt.Sprintf("no handler for path %q", req.URL.Path)
@@ -762,6 +861,186 @@ func (s *authenticationServiceServer) serveRegisterProtobuf(ctx context.Context,
 	}
 	if respContent == nil {
 		s.writeError(ctx, resp, twirp.InternalError("received a nil *RegisterResponse and nil error while calling Register. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	respBytes, err := proto.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/protobuf")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *authenticationServiceServer) serveCheckToken(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	header := req.Header.Get("Content-Type")
+	i := strings.Index(header, ";")
+	if i == -1 {
+		i = len(header)
+	}
+	switch strings.TrimSpace(strings.ToLower(header[:i])) {
+	case "application/json":
+		s.serveCheckTokenJSON(ctx, resp, req)
+	case "application/protobuf":
+		s.serveCheckTokenProtobuf(ctx, resp, req)
+	default:
+		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
+		twerr := badRouteError(msg, req.Method, req.URL.Path)
+		s.writeError(ctx, resp, twerr)
+	}
+}
+
+func (s *authenticationServiceServer) serveCheckTokenJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "CheckToken")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	d := json.NewDecoder(req.Body)
+	rawReqBody := json.RawMessage{}
+	if err := d.Decode(&rawReqBody); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+	reqContent := new(CheckTokenRequest)
+	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+
+	handler := s.AuthenticationService.CheckToken
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *CheckTokenRequest) (*CheckTokenResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*CheckTokenRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*CheckTokenRequest) when calling interceptor")
+					}
+					return s.AuthenticationService.CheckToken(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*CheckTokenResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*CheckTokenResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *CheckTokenResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *CheckTokenResponse and nil error while calling CheckToken. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
+	respBytes, err := marshaler.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/json")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *authenticationServiceServer) serveCheckTokenProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "CheckToken")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	buf, err := io.ReadAll(req.Body)
+	if err != nil {
+		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
+		return
+	}
+	reqContent := new(CheckTokenRequest)
+	if err = proto.Unmarshal(buf, reqContent); err != nil {
+		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
+		return
+	}
+
+	handler := s.AuthenticationService.CheckToken
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *CheckTokenRequest) (*CheckTokenResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*CheckTokenRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*CheckTokenRequest) when calling interceptor")
+					}
+					return s.AuthenticationService.CheckToken(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*CheckTokenResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*CheckTokenResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *CheckTokenResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *CheckTokenResponse and nil error while calling CheckToken. nil responses are not supported"))
 		return
 	}
 
@@ -1366,21 +1645,25 @@ func callClientError(ctx context.Context, h *twirp.ClientHooks, err twirp.Error)
 }
 
 var twirpFileDescriptor0 = []byte{
-	// 252 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x91, 0x31, 0x4f, 0xc3, 0x30,
-	0x10, 0x85, 0x95, 0xd2, 0xa2, 0xf6, 0x00, 0x81, 0x0e, 0x5a, 0x55, 0x99, 0x50, 0x26, 0xa6, 0x04,
-	0xc1, 0xc4, 0x58, 0x06, 0x26, 0xa6, 0xb0, 0x20, 0x24, 0x86, 0x34, 0x1c, 0xad, 0x05, 0xd8, 0xc1,
-	0x77, 0x86, 0x3f, 0xc0, 0x0f, 0x47, 0xb6, 0xd3, 0x42, 0x32, 0xc2, 0x76, 0xef, 0x9d, 0xef, 0xd3,
-	0xd3, 0x33, 0xcc, 0x6c, 0x53, 0x17, 0x95, 0x93, 0x75, 0xc1, 0x64, 0x3f, 0x54, 0x4d, 0x79, 0x63,
-	0x8d, 0x18, 0x1c, 0x7a, 0x2f, 0xbb, 0x81, 0xfd, 0x5b, 0xb3, 0x52, 0xba, 0xa4, 0x77, 0x47, 0x2c,
-	0x98, 0xc2, 0xd8, 0x31, 0x59, 0x5d, 0xbd, 0xd1, 0x3c, 0x39, 0x4d, 0xce, 0x26, 0xe5, 0x56, 0xfb,
-	0x5d, 0x53, 0x31, 0x7f, 0x1a, 0xfb, 0x34, 0x1f, 0xc4, 0xdd, 0x46, 0x67, 0x0b, 0x38, 0x68, 0x39,
-	0xdc, 0x18, 0xcd, 0x84, 0x27, 0x30, 0x12, 0xf3, 0x42, 0xba, 0xa5, 0x44, 0xd1, 0xc1, 0x0f, 0xba,
-	0xf8, 0xec, 0x11, 0x0e, 0x4b, 0x5a, 0x29, 0x16, 0xb2, 0xff, 0x4c, 0x83, 0x08, 0xc3, 0x70, 0xb3,
-	0x13, 0xfc, 0x30, 0x67, 0xf7, 0x70, 0xf4, 0x83, 0xff, 0x6b, 0x48, 0x4f, 0xb6, 0xe6, 0x75, 0x4b,
-	0xf6, 0xf3, 0xc5, 0x57, 0x02, 0xd3, 0x85, 0x93, 0x35, 0x69, 0x51, 0x75, 0x25, 0xca, 0xe8, 0xbb,
-	0xd8, 0x34, 0x9e, 0xc3, 0x28, 0xb4, 0x82, 0x98, 0xfb, 0xb6, 0xf3, 0xdf, 0x55, 0xa7, 0xc7, 0x1d,
-	0xaf, 0x4d, 0x74, 0x05, 0xe3, 0x4d, 0x4a, 0x9c, 0xc6, 0x07, 0xbd, 0x52, 0xd2, 0x59, 0xdf, 0x8e,
-	0xa7, 0xd7, 0x7b, 0x0f, 0x93, 0x22, 0x7c, 0xed, 0xd2, 0x3d, 0x2f, 0x77, 0xc3, 0x74, 0xf9, 0x1d,
-	0x00, 0x00, 0xff, 0xff, 0x51, 0x28, 0xca, 0xb9, 0xfe, 0x01, 0x00, 0x00,
+	// 307 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xbd, 0x4e, 0xf3, 0x30,
+	0x14, 0x86, 0xd5, 0x9f, 0x7c, 0x6a, 0xcf, 0x07, 0x02, 0x0e, 0x6d, 0x89, 0x32, 0x55, 0x9e, 0x60,
+	0x49, 0x10, 0x4c, 0x4c, 0xa8, 0x20, 0x75, 0x62, 0x0a, 0x0c, 0x08, 0x89, 0x21, 0x0d, 0x87, 0x26,
+	0x2a, 0xd8, 0xc1, 0x76, 0xe0, 0x0a, 0xb9, 0x2f, 0x64, 0x3b, 0x69, 0x9b, 0x16, 0x31, 0xc0, 0x76,
+	0x7e, 0x1f, 0xbf, 0xf6, 0x6b, 0x18, 0xc9, 0x22, 0x8d, 0x92, 0x52, 0x67, 0x91, 0x22, 0xf9, 0x9e,
+	0xa7, 0x14, 0x16, 0x52, 0x68, 0x81, 0x5d, 0x53, 0x63, 0x53, 0xd8, 0xb9, 0x11, 0xf3, 0x9c, 0xc7,
+	0xf4, 0x56, 0x92, 0xd2, 0x18, 0x40, 0xaf, 0x54, 0x24, 0x79, 0xf2, 0x4a, 0x7e, 0x6b, 0xdc, 0x3a,
+	0xee, 0xc7, 0xcb, 0xdc, 0xf4, 0x8a, 0x44, 0xa9, 0x0f, 0x21, 0x9f, 0xfc, 0xb6, 0xeb, 0xd5, 0x39,
+	0x9b, 0xc0, 0x6e, 0xc5, 0x51, 0x85, 0xe0, 0x8a, 0x70, 0x00, 0x9e, 0x16, 0x0b, 0xe2, 0x15, 0xc5,
+	0x25, 0x0d, 0x7c, 0xbb, 0x89, 0x67, 0x8f, 0xb0, 0x17, 0xd3, 0x3c, 0x57, 0x9a, 0xe4, 0x1f, 0xd5,
+	0x20, 0x42, 0xd7, 0xee, 0x74, 0x6c, 0xdd, 0xc6, 0xec, 0x1e, 0xf6, 0x57, 0xf8, 0xdf, 0x8a, 0x34,
+	0x64, 0x29, 0x5e, 0x96, 0x64, 0x13, 0xb3, 0x13, 0x38, 0xb8, 0xce, 0x28, 0x5d, 0xdc, 0x99, 0xed,
+	0x5a, 0xfa, 0xb7, 0x68, 0x36, 0x05, 0x5c, 0x1f, 0xad, 0x64, 0xfc, 0x74, 0xcd, 0x01, 0x78, 0xe6,
+	0x10, 0xe5, 0xb7, 0xc7, 0x1d, 0xc3, 0xb1, 0xc9, 0xd9, 0x67, 0x0b, 0x86, 0x93, 0x52, 0x67, 0xc4,
+	0x75, 0x9e, 0x26, 0x3a, 0x17, 0xfc, 0xd6, 0x99, 0x8b, 0xa7, 0xe0, 0x59, 0x23, 0x10, 0x43, 0x63,
+	0x70, 0xb8, 0xee, 0x6e, 0x70, 0xd8, 0xa8, 0x55, 0xa7, 0x5f, 0x40, 0xaf, 0x7e, 0x18, 0x1c, 0xba,
+	0x81, 0x0d, 0x1f, 0x82, 0xd1, 0x66, 0xb9, 0x5a, 0xbd, 0x04, 0x58, 0x5d, 0x07, 0x8f, 0xdc, 0xd4,
+	0xd6, 0x5b, 0x04, 0xfe, 0x76, 0xc3, 0x01, 0xae, 0xfe, 0x3f, 0xf4, 0x23, 0xfb, 0x1d, 0x67, 0xe5,
+	0xf3, 0xec, 0x9f, 0x8d, 0xce, 0xbf, 0x02, 0x00, 0x00, 0xff, 0xff, 0x76, 0x69, 0xd0, 0x49, 0xb2,
+	0x02, 0x00, 0x00,
 }

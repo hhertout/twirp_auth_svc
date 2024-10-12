@@ -6,6 +6,7 @@ option go_package = "/protobuf";
 service AuthenticationService {
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc CheckToken(CheckTokenRequest) returns (CheckTokenResponse);
 }
 
 message LoginRequest {
@@ -28,4 +29,12 @@ message RegisterResponse {
     string token = 1;
     string username = 2;
     string role = 3;
+}
+
+message CheckTokenRequest {
+    string token = 1;
+}
+
+message CheckTokenResponse {
+    string username = 1;
 }

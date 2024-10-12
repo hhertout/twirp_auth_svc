@@ -77,3 +77,21 @@ func (s *AuthenticationServer) Register(ctx context.Context, creds *protobuf.Reg
 
 	return &protobuf.RegisterResponse{Token: token, Username: creds.Username}, nil
 }
+
+func (s *AuthenticationServer) CheckToken(ctx context.Context, req *protobuf.CheckTokenRequest) (*protobuf.CheckTokenResponse, error) {
+	token := req.GetToken()
+	if token == "" {
+		return nil, twirp.InvalidArgument.Error("Token is empty")
+	}
+
+	valid, claims, err := tools.NewJWTService().Verify(token)
+	if err != nil {
+		return nil, twirp.Unauthenticated.Error(err.Error())
+	}
+
+	if !valid {
+		return nil, twirp.Unauthenticated.Error("Invalid token")
+	}
+
+	return &protobuf.CheckTokenResponse{Username: claims.Issuer}, nil
+}
