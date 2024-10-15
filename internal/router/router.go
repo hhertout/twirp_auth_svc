@@ -8,7 +8,9 @@ import (
 	"github.com/hhertout/twirp_auth/internal/middleware"
 	"github.com/hhertout/twirp_auth/internal/repository"
 	"github.com/hhertout/twirp_auth/internal/server"
-	"github.com/hhertout/twirp_auth/protobuf"
+	"github.com/hhertout/twirp_auth/pkg/tools"
+	"github.com/hhertout/twirp_auth/protobuf/proto_auth"
+	"github.com/hhertout/twirp_auth/protobuf/proto_user"
 	"github.com/twitchtv/twirp"
 	"go.uber.org/zap"
 )
@@ -19,17 +21,31 @@ func GetRouter(logger *zap.Logger) *http.ServeMux {
 		logger.Fatal("Error during the creation of the repository", zap.Error(err))
 	}
 
-	server := &server.AuthenticationServer{
+	auth_server := &server.AuthenticationServer{
 		UserRepository: r,
+		Logger:         logger,
 	}
 
-	handler := protobuf.NewAuthenticationServiceServer(
-		server,
+	user_server := &server.UserServer{
+		UserRepository:  r,
+		PasswordService: tools.NewPasswordService(),
+		Logger:          logger,
+	}
+
+	auth_handler := proto_auth.NewAuthenticationServiceServer(
+		auth_server,
 		twirp.WithServerPathPrefix("/api"),
 		twirp.WithServerHooks(hooks.NewLoggingServerHooks(logger)),
 	)
 
-	wrapped := middleware.WithHeaders(handler)
+	user_handler := proto_user.NewUserServiceServer(
+		user_server,
+		twirp.WithServerPathPrefix("/api"),
+		twirp.WithServerHooks(hooks.NewLoggingServerHooks(logger)),
+	)
+
+	wrapped_auth := middleware.WithHeaders(auth_handler)
+	wrapped_user := middleware.WithHeaders(user_handler)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +60,8 @@ func GetRouter(logger *zap.Logger) *http.ServeMux {
 		})
 	})
 
-	mux.Handle(handler.PathPrefix(), wrapped)
+	mux.Handle(auth_handler.PathPrefix(), wrapped_auth)
+	mux.Handle(user_handler.PathPrefix(), wrapped_user)
 
 	return mux
 }

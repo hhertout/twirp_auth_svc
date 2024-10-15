@@ -2,11 +2,12 @@
 
 CREATE TABLE IF NOT EXISTS "user" (
     id SERIAL PRIMARY KEY,
-    uuid UUID NOT NULL DEFAULT gen_random_uuid (),
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    uuid UUID NOT NULL DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP,
     email VARCHAR(255) NOT NULL UNIQUE,
+    role VARCHAR(80)[] NOT NULL DEFAULT ARRAY['USER'],
     password VARCHAR(255) NOT NULL
 );
 
@@ -17,6 +18,9 @@ ADD IF NOT EXISTS created_at date not null default now(),
 ADD IF NOT EXISTS updated_at date not null default now(),
 ADD IF NOT EXISTS deleted_at date;
 
+--
+ALTER TABLE IF EXISTS "user"
+ADD IF NOT EXISTS role VARCHAR(80)[] NOT NULL DEFAULT ARRAY['USER'];
 --
 
 CREATE OR REPLACE FUNCTION f_set_creation_date()

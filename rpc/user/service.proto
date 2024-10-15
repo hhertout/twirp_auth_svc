@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package user;
+option go_package = "/protobuf/proto_user";
+
+service UserService {
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc Ban(BanRequest) returns (BanResponse);
+    rpc Unban(UnbanRequest) returns (UnbanResponse);
+    rpc Delete(DeleteRequest) returns (DeleteResponse);
+    rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse);
+    rpc UpdateEmail(UpdateEmailRequest) returns (UpdateEmailResponse);
+}
+
+message RegisterRequest {
+    string username = 1;
+    string password = 2;
+    string name = 3;
+}
+
+message RegisterResponse {
+    string token = 1;
+    string username = 2;
+}
+
+message BanRequest {
+    string username = 1;
+}
+
+message BanResponse {
+    bool success = 1;
+}
+
+message UnbanRequest {
+    string username = 1;
+}
+
+message UnbanResponse {
+    bool success = 1;
+}
+
+message DeleteRequest {
+    string username = 1;
+}
+
+message DeleteResponse {
+    bool success = 1;
+}
+
+message UpdatePasswordRequest {
+    string username = 1;
+    string old_password = 2;
+    string new_password = 3;
+}
+
+message UpdatePasswordResponse {
+    bool success = 1;
+}
+
+message UpdateEmailRequest {
+    string old_email = 2;
+    string new_email = 3;
+}
+
+message UpdateEmailResponse {
+    bool success = 1;
+}
