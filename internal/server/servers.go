@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/hhertout/twirp_auth/internal/repository"
+	"github.com/hhertout/twirp_auth/pkg/auth"
 	"github.com/hhertout/twirp_auth/pkg/tools"
 	"go.uber.org/zap"
 )
@@ -16,5 +17,6 @@ type AuthenticationServer struct {
 type UserServer struct {
 	UserRepository  *repository.UserRepository
 	PasswordService tools.PasswordServiceInterface
+	AuthManager     auth.AuthManagerInterface
 	Logger          *zap.Logger
 }

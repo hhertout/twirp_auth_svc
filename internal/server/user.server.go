@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/hhertout/twirp_auth/internal/services"
+	"github.com/hhertout/twirp_auth/pkg/auth/role"
 	"github.com/hhertout/twirp_auth/pkg/tools"
 	"github.com/hhertout/twirp_auth/protobuf/proto_user"
 	"github.com/twitchtv/twirp"
@@ -68,15 +69,15 @@ func (u *UserServer) Register(ctx context.Context, req *proto_user.RegisterReque
 //
 // @route /api/user.UserService/Login
 func (u *UserServer) Ban(ctx context.Context, req *proto_user.BanRequest) (*proto_user.BanResponse, error) {
+	user, err := u.AuthManager.AllowAccessWithRole(ctx, []role.ROLE{role.ROLE_ADMIN})
+	if err != nil {
+		u.Logger.Sugar().Error("Error during the check of the credentials", err)
+		return nil, twirp.PermissionDenied.Error(err.Error())
+	}
+
 	if req.Username == "" {
 		u.Logger.Sugar().Error("Username is empty")
 		return nil, twirp.InvalidArgument.Error("Username is empty")
-	}
-
-	user, err := u.UserRepository.FindOneByEmail(req.Username)
-	if err != nil {
-		u.Logger.Sugar().Error("Error during the search of the user", err)
-		return nil, twirp.InternalErrorWith(err)
 	}
 
 	if user.Email != req.Username {
@@ -97,15 +98,15 @@ func (u *UserServer) Ban(ctx context.Context, req *proto_user.BanRequest) (*prot
 //
 // @route /api/user.UserService/Unban
 func (u *UserServer) Unban(ctx context.Context, req *proto_user.UnbanRequest) (*proto_user.UnbanResponse, error) {
+	user, err := u.AuthManager.AllowAccessWithRole(ctx, []role.ROLE{role.ROLE_ADMIN})
+	if err != nil {
+		u.Logger.Sugar().Error("Error during the check of the credentials", err)
+		return nil, twirp.PermissionDenied.Error(err.Error())
+	}
+
 	if req.Username == "" {
 		u.Logger.Sugar().Error("Username is empty")
 		return nil, twirp.InvalidArgument.Error("Username is empty")
-	}
-
-	user, err := u.UserRepository.FindOneByEmail(req.Username)
-	if err != nil {
-		u.Logger.Sugar().Error("Error during the search of the user", err)
-		return nil, twirp.InternalErrorWith(err)
 	}
 
 	if user.Email != req.Username {
@@ -126,15 +127,15 @@ func (u *UserServer) Unban(ctx context.Context, req *proto_user.UnbanRequest) (*
 //
 // @route /api/user.UserService/Update
 func (u *UserServer) Delete(ctx context.Context, req *proto_user.DeleteRequest) (*proto_user.DeleteResponse, error) {
+	user, err := u.AuthManager.AllowAccessWithRole(ctx, []role.ROLE{role.ROLE_ADMIN})
+	if err != nil {
+		u.Logger.Sugar().Error("Error during the check of the credentials", err)
+		return nil, twirp.PermissionDenied.Error(err.Error())
+	}
+
 	if req.Username == "" {
 		u.Logger.Sugar().Error("Username is empty")
 		return nil, twirp.InvalidArgument.Error("Username is empty")
-	}
-
-	user, err := u.UserRepository.FindOneByEmail(req.Username)
-	if err != nil {
-		u.Logger.Sugar().Error("Error during the search of the user", err)
-		return nil, twirp.InternalErrorWith(err)
 	}
 
 	if user.Email != req.Username {
@@ -155,6 +156,12 @@ func (u *UserServer) Delete(ctx context.Context, req *proto_user.DeleteRequest) 
 //
 // @route /api/user.UserService/Update
 func (u *UserServer) UpdatePassword(ctx context.Context, req *proto_user.UpdatePasswordRequest) (*proto_user.UpdatePasswordResponse, error) {
+	user, err := u.AuthManager.AllowAccessWithRole(ctx, []role.ROLE{})
+	if err != nil {
+		u.Logger.Sugar().Error("Error during the check of the credentials", err)
+		return nil, twirp.PermissionDenied.Error(err.Error())
+	}
+
 	if req.Username == "" {
 		u.Logger.Sugar().Error("Username is empty")
 		return nil, twirp.InvalidArgument.Error("Username is empty")
@@ -163,12 +170,6 @@ func (u *UserServer) UpdatePassword(ctx context.Context, req *proto_user.UpdateP
 	if req.NewPassword == "" {
 		u.Logger.Sugar().Error("Password is empty")
 		return nil, twirp.InvalidArgument.Error("Password is empty")
-	}
-
-	user, err := u.UserRepository.FindOneByEmail(req.Username)
-	if err != nil {
-		u.Logger.Sugar().Error("Error during the search of the user", err)
-		return nil, twirp.InternalErrorWith(err)
 	}
 
 	if user.Email != req.Username {
@@ -206,6 +207,12 @@ func (u *UserServer) UpdatePassword(ctx context.Context, req *proto_user.UpdateP
 //
 // @route /api/user.UserService/Update
 func (u *UserServer) UpdateEmail(ctx context.Context, req *proto_user.UpdateEmailRequest) (*proto_user.UpdateEmailResponse, error) {
+	user, err := u.AuthManager.AllowAccessWithRole(ctx, []role.ROLE{})
+	if err != nil {
+		u.Logger.Sugar().Error("Error during the check of the credentials", err)
+		return nil, twirp.PermissionDenied.Error(err.Error())
+	}
+
 	if req.NewEmail == "" {
 		u.Logger.Sugar().Error("New email is empty")
 		return nil, twirp.InvalidArgument.Error("Username is empty")
@@ -214,12 +221,6 @@ func (u *UserServer) UpdateEmail(ctx context.Context, req *proto_user.UpdateEmai
 	if req.OldEmail == "" {
 		u.Logger.Sugar().Error("Old email is empty")
 		return nil, twirp.InvalidArgument.Error("New email is empty")
-	}
-
-	user, err := u.UserRepository.FindOneByEmail(req.NewEmail)
-	if err != nil {
-		u.Logger.Sugar().Error("Error during the search of the user", err)
-		return nil, twirp.InternalErrorWith(err)
 	}
 
 	if user.Email == req.NewEmail {

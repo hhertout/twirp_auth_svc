@@ -23,6 +23,7 @@ func WithHeaders(base http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, hooks.ServerContextKey("user-agent"), r.Header.Get("User-Agent"))
 		ctx = context.WithValue(ctx, hooks.ServerContextKey("x-forwarded-for"), r.Header.Get("X-Forwarded-For"))
 		ctx = context.WithValue(ctx, hooks.ServerContextKey("remote-addr"), r.Header.Get("Remote-Addr"))
+		ctx = context.WithValue(ctx, hooks.ServerContextKey("Authorization"), r.Header.Get("Authorization"))
 
 		r = r.WithContext(ctx)
 
