@@ -11,9 +11,21 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+// PasswordServiceInterface defines the methods required for managing passwords.
+// It includes methods for generating, hashing, and verifying passwords.
 type PasswordServiceInterface interface {
+	// Generate generates a random password of 16 characters using a predefined character set.
+	// Returns the generated password and an error if any occurs.
 	Generate() (string, error)
+
+	// Hash generates a secure hash for a given password using the Argon2 function.
+	// Uses an environment variable "ENCRYPT_SALT" as the salt.
+	// Returns the base64 encoded hash and an error if any occurs.
 	Hash(password string) (string, error)
+
+	// Verify checks if a given password matches a hash using the Argon2 function.
+	// Uses an environment variable "ENCRYPT_SALT" as the salt.
+	// Returns a boolean indicating if the password is valid and an error if any occurs.
 	Verify(password string, hash string) (bool, error)
 }
 
@@ -42,9 +54,6 @@ func (p *PasswordService) Generate() (string, error) {
 	return string(password), nil
 }
 
-// Hash generates a secure hash for a given password using the Argon2 function.
-// Uses an environment variable "ENCRYPT_SALT" as the salt.
-// Returns the base64 encoded hash and an error if any occurs.
 func (p *PasswordService) Hash(password string) (string, error) {
 	salt := os.Getenv("ENCRYPT_SALT")
 	if salt == "" {
@@ -55,9 +64,6 @@ func (p *PasswordService) Hash(password string) (string, error) {
 	return base64.RawStdEncoding.EncodeToString(key), nil
 }
 
-// Verify checks if a given password matches a hash using the Argon2 function.
-// Uses an environment variable "ENCRYPT_SALT" as the salt.
-// Returns a boolean indicating if the password is valid and an error if any occurs.
 func (p *PasswordService) Verify(password string, hash string) (bool, error) {
 	salt := os.Getenv("ENCRYPT_SALT")
 	if salt == "" {
