@@ -43,6 +43,9 @@ func (s *AuthenticationServer) Login(ctx context.Context, creds *proto_auth.Logi
 	return &proto_auth.LoginResponse{Token: token}, nil
 }
 
+// CheckToken checks if the token is valid
+//
+// @route /api/auth.AuthenticationService/CheckToken
 func (s *AuthenticationServer) CheckToken(ctx context.Context, req *proto_auth.CheckTokenRequest) (*proto_auth.CheckTokenResponse, error) {
 	token := req.GetToken()
 	if token == "" {
