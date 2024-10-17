@@ -7,7 +7,7 @@ import (
 	"github.com/hhertout/twirp_auth/internal/hooks"
 	"github.com/hhertout/twirp_auth/internal/repository"
 	"github.com/hhertout/twirp_auth/pkg/auth/role"
-	"github.com/hhertout/twirp_auth/pkg/tools"
+	"github.com/hhertout/twirp_auth/pkg/crypto"
 )
 
 // AuthManagerInterface defines the methods required for managing authentication and authorization.
@@ -44,13 +44,13 @@ type AuthManagerInterface interface {
 
 type AuthManager struct {
 	Repository *repository.UserRepository
-	JWTManager tools.JWTServiceInterface
+	JWTManager crypto.JWTServiceInterface
 }
 
 func NewAuthManager(r *repository.UserRepository) *AuthManager {
 	return &AuthManager{
 		Repository: r,
-		JWTManager: tools.NewJWTService(),
+		JWTManager: crypto.NewJWTService(),
 	}
 }
 

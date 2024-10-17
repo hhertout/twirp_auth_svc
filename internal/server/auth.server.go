@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/hhertout/twirp_auth/internal/services"
-	"github.com/hhertout/twirp_auth/pkg/tools"
 	"github.com/hhertout/twirp_auth/protobuf/proto_auth"
 	"github.com/twitchtv/twirp"
 )
@@ -26,7 +25,7 @@ func (s *AuthenticationServer) Login(ctx context.Context, creds *proto_auth.Logi
 		return nil, twirp.NotFound.Error("User not found")
 	}
 
-	match, err := tools.NewPasswordService().Verify(creds.Password, user.Password)
+	match, err := s.PasswordService.Verify(creds.Password, user.Password)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(err)
 	}
@@ -35,7 +34,7 @@ func (s *AuthenticationServer) Login(ctx context.Context, creds *proto_auth.Logi
 		return nil, twirp.Unauthenticated.Error("Invalid credentials")
 	}
 
-	token, err := tools.NewJWTService().Generate(creds.Username)
+	token, err := s.JwtService.Generate(creds.Username)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(err)
 	}
@@ -52,7 +51,7 @@ func (s *AuthenticationServer) CheckToken(ctx context.Context, req *proto_auth.C
 		return nil, twirp.InvalidArgument.Error("Token is empty")
 	}
 
-	valid, claims, err := tools.NewJWTService().Verify(token)
+	valid, claims, err := s.JwtService.Verify(token)
 	if err != nil {
 		return nil, twirp.Unauthenticated.Error(err.Error())
 	}

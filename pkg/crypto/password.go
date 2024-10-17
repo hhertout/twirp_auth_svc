@@ -1,4 +1,4 @@
-package tools
+package crypto
 
 import (
 	"crypto/rand"
@@ -38,8 +38,9 @@ func NewPasswordService() *PasswordService {
 // Generate generates a random password of 16 characters using a predefined character set.
 // Returns the generated password and an error if any occurs.
 func (p *PasswordService) Generate() (string, error) {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*=+?/"
+
 	passwordLength := 16
-	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*=+?/"
 	charsetLen := big.NewInt(int64(len(charset)))
 
 	password := make([]byte, passwordLength)

@@ -6,7 +6,6 @@ import (
 
 	"github.com/hhertout/twirp_auth/internal/services"
 	"github.com/hhertout/twirp_auth/pkg/auth/role"
-	"github.com/hhertout/twirp_auth/pkg/tools"
 	"github.com/hhertout/twirp_auth/protobuf/proto_user"
 	"github.com/twitchtv/twirp"
 )
@@ -47,7 +46,7 @@ func (u *UserServer) Register(ctx context.Context, req *proto_user.RegisterReque
 		return nil, twirp.AlreadyExists.Error("User already exists")
 	}
 
-	hash, err := tools.NewPasswordService().Hash(req.Password)
+	hash, err := u.PasswordService.Hash(req.Password)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(err)
 	}
@@ -57,7 +56,7 @@ func (u *UserServer) Register(ctx context.Context, req *proto_user.RegisterReque
 		return nil, twirp.InternalErrorWith(err)
 	}
 
-	token, err := tools.NewJWTService().Generate(req.Username)
+	token, err := u.JwtService.Generate(req.Username)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(err)
 	}
@@ -177,8 +176,7 @@ func (u *UserServer) UpdatePassword(ctx context.Context, req *proto_user.UpdateP
 		return nil, twirp.NotFound.Error("User not found")
 	}
 
-	passSvc := tools.NewPasswordService()
-	valid, err := passSvc.Verify(req.OldPassword, user.Password)
+	valid, err := u.PasswordService.Verify(req.OldPassword, user.Password)
 	if err != nil {
 		u.Logger.Sugar().Error("Error during the verification of the password", err)
 		return nil, twirp.InternalErrorWith(err)
@@ -188,7 +186,7 @@ func (u *UserServer) UpdatePassword(ctx context.Context, req *proto_user.UpdateP
 		return nil, twirp.Unauthenticated.Error("Invalid password")
 	}
 
-	hash, err := passSvc.Hash(req.NewPassword)
+	hash, err := u.PasswordService.Hash(req.NewPassword)
 	if err != nil {
 		u.Logger.Sugar().Error("Error during the hashing of the password", err)
 		return nil, twirp.InternalErrorWith(err)

@@ -9,7 +9,7 @@ import (
 	"github.com/hhertout/twirp_auth/internal/repository"
 	"github.com/hhertout/twirp_auth/internal/server"
 	"github.com/hhertout/twirp_auth/pkg/auth"
-	"github.com/hhertout/twirp_auth/pkg/tools"
+	"github.com/hhertout/twirp_auth/pkg/crypto"
 	"github.com/hhertout/twirp_auth/protobuf/proto_auth"
 	"github.com/hhertout/twirp_auth/protobuf/proto_user"
 	"github.com/twitchtv/twirp"
@@ -23,15 +23,18 @@ func GetRouter(logger *zap.Logger) *http.ServeMux {
 	}
 
 	auth_server := &server.AuthenticationServer{
-		UserRepository: r,
-		Logger:         logger,
+		Logger:          logger,
+		UserRepository:  r,
+		PasswordService: crypto.NewPasswordService(),
+		JwtService:      crypto.NewJWTService(),
 	}
 
 	user_server := &server.UserServer{
-		UserRepository:  r,
-		PasswordService: tools.NewPasswordService(),
-		AuthManager:     auth.NewAuthManager(r),
 		Logger:          logger,
+		UserRepository:  r,
+		PasswordService: crypto.NewPasswordService(),
+		JwtService:      crypto.NewJWTService(),
+		AuthManager:     auth.NewAuthManager(r),
 	}
 
 	auth_handler := proto_auth.NewAuthenticationServiceServer(
