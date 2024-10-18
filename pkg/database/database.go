@@ -21,10 +21,11 @@ var (
 	username = os.Getenv("POSTGRES_USER")
 	port     = os.Getenv("DB_PORT")
 	host     = os.Getenv("DB_HOST")
+	ssl      = os.Getenv("DB_SSL")
 )
 
 func Connect() (*DbService, error) {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", username, password, host, port, database)
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", username, password, host, port, database, ssl)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, err
@@ -38,7 +39,7 @@ func (s *DbService) Health() map[string]string {
 
 	err := s.DbPool.PingContext(ctx)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("db down: %v", err))
+		log.Fatalf("db down: %v", err)
 	}
 
 	return map[string]string{
