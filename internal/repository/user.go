@@ -1,22 +1,34 @@
 package repository
 
-type User struct {
-	Id       string   `db:"id"`
-	Uuuid    string   `db:"uuid"`
-	Email    string   `db:"email"`
-	Password string   `db:"password"`
-	Role     []string `db:"role"`
+import (
+	"database/sql"
+
+	"github.com/hhertout/twirp_auth/pkg/database"
+	"github.com/hhertout/twirp_auth/pkg/dto"
+)
+
+type UserRepository struct {
+	dbPool *sql.DB
 }
 
-type CompleteUser struct {
-	Id        string   `db:"id"`
-	Uuid      string   `db:"uuid"`
-	Email     string   `db:"email"`
-	Password  string   `db:"password"`
-	Role      []string `db:"role"`
-	CreatedAt string   `db:"created_at"`
-	UpdatedAt string   `db:"updated_at"`
-	DeletedAt string   `db:"deleted_at"`
+// NewRepository creates a new instance of Repository.
+// If a custom database source is provided, it uses that source.
+// Otherwise, it connects to the default database.
+func NewUserRepository(customSource *sql.DB) (*UserRepository, error) {
+	if customSource != nil {
+		return &UserRepository{
+			customSource,
+		}, nil
+	} else {
+		dbService, err := database.Connect()
+		if err != nil {
+			return nil, err
+		}
+
+		return &UserRepository{
+			dbService.DbPool,
+		}, nil
+	}
 }
 
 func (r UserRepository) Create(email string, password string, role []string) (int, error) {
@@ -35,8 +47,8 @@ func (r UserRepository) Create(email string, password string, role []string) (in
 	return int(affected), nil
 }
 
-func (r UserRepository) FindOneByEmail(email string) (User, error) {
-	var user User
+func (r UserRepository) FindOneByEmail(email string) (dto.User, error) {
+	var user dto.User
 	rows, err := r.dbPool.Query(`
 		SELECT id, uuid, email, password 
 		FROM "user" 
@@ -58,8 +70,8 @@ func (r UserRepository) FindOneByEmail(email string) (User, error) {
 	return user, nil
 }
 
-func (r UserRepository) FindOneByEmailInAll(email string) (CompleteUser, error) {
-	var user CompleteUser
+func (r UserRepository) FindCompleteOneByEmail(email string) (dto.CompleteUser, error) {
+	var user dto.CompleteUser
 	rows, err := r.dbPool.Query(`
 		SELECT id, uuid, email, password, deleted_at, created_at, updated_at 
 		FROM "user" 

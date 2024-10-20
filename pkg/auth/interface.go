@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 
-	"github.com/hhertout/twirp_auth/internal/repository"
 	"github.com/hhertout/twirp_auth/pkg/auth/role"
+	"github.com/hhertout/twirp_auth/pkg/dto"
 )
 
 // AuthManagerInterface defines the methods required for managing authentication and authorization.
@@ -22,7 +22,7 @@ type AuthManagerInterface interface {
 	// Returns:
 	// - The user if they have the required role.
 	// - An error if the token is missing, invalid, or the user does not have the required role.
-	RestrictAccessWithRole(ctx context.Context, roles []role.ROLE) (repository.User, error)
+	RestrictAccessWithRole(ctx context.Context, roles []role.ROLE) (dto.User, error)
 
 	// AllowAccessWithRole allows access to a user based on their role.
 	// It verifies the JWT token from the context and checks if the user has one of the required roles.
@@ -36,9 +36,9 @@ type AuthManagerInterface interface {
 	// Returns:
 	// - The user if they have the required role.
 	// - An error if the token is missing, invalid, or the user does not have the required role.
-	AllowAccessWithRole(ctx context.Context, roles []role.ROLE) (repository.User, error)
+	AllowAccessWithRole(ctx context.Context, roles []role.ROLE) (dto.User, error)
 }
 
 type AuthDataLayerInterface interface {
-	FindOneByEmail(email string) (repository.User, error)
+	FindOneByEmail(email string) (dto.User, error)
 }

@@ -20,17 +20,13 @@ func (u *UserServer) Register(ctx context.Context, req *proto_user.RegisterReque
 		u.Logger.Sugar().Error("Username is not a valid email")
 		return nil, twirp.InvalidArgumentError(req.Username, "Username is not a valid email")
 	}
-	if req.Password == "" {
-		u.Logger.Sugar().Error("Password is empty")
-		return nil, twirp.InvalidArgumentError(req.Password, "Password are required")
-	}
 
 	if err := services.CheckCredentials(req.Username, req.Password); err != nil {
 		u.Logger.Sugar().Error("Error during the check of the credentials", err)
 		return nil, twirp.InvalidArgument.Error(err.Error())
 	}
 
-	user, err := u.UserRepository.FindOneByEmailInAll(req.Username)
+	user, err := u.UserRepository.FindCompleteOneByEmail(req.Username)
 	if err != nil {
 		u.Logger.Sugar().Error("Error during the search of the user", err)
 		return nil, twirp.InternalErrorWith(err)
@@ -161,14 +157,14 @@ func (u *UserServer) UpdatePassword(ctx context.Context, req *proto_user.UpdateP
 		return nil, twirp.PermissionDenied.Error(err.Error())
 	}
 
-	if req.Username == "" {
-		u.Logger.Sugar().Error("Username is empty")
-		return nil, twirp.InvalidArgument.Error("Username is empty")
+	if err := services.CheckCredentials(user.Email, req.OldPassword); err != nil {
+		u.Logger.Sugar().Error("Error some credentials are empty", err)
+		return nil, twirp.InvalidArgument.Error(err.Error())
 	}
 
 	if req.NewPassword == "" {
-		u.Logger.Sugar().Error("Password is empty")
-		return nil, twirp.InvalidArgument.Error("Password is empty")
+		u.Logger.Sugar().Error("New password is empty")
+		return nil, twirp.InvalidArgument.Error("New password is empty")
 	}
 
 	if user.Email != req.Username {
@@ -221,20 +217,14 @@ func (u *UserServer) UpdateEmail(ctx context.Context, req *proto_user.UpdateEmai
 		return nil, twirp.InvalidArgument.Error("New email is empty")
 	}
 
-	if user.Email == req.NewEmail {
-		u.Logger.Sugar().Error("User already exists", user.Email)
-		return nil, twirp.NotFound.Error("User already exists")
-	}
-
-	user, err = u.UserRepository.FindOneByEmail(req.OldEmail)
-	if err != nil {
-		u.Logger.Sugar().Error("Error during the search of the user", err)
-		return nil, twirp.InternalErrorWith(err)
-	}
-
 	if user.Email != req.OldEmail {
 		u.Logger.Sugar().Error("User not found")
 		return nil, twirp.NotFound.Error("User not found")
+	}
+
+	if user.Email == req.NewEmail {
+		u.Logger.Sugar().Error("User already exists", user.Email)
+		return nil, twirp.NotFound.Error("User already exists")
 	}
 
 	_, err = u.UserRepository.UpdateEmail(req.OldEmail, req.NewEmail)
