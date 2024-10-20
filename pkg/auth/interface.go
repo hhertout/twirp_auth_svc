@@ -38,3 +38,7 @@ type AuthManagerInterface interface {
 	// - An error if the token is missing, invalid, or the user does not have the required role.
 	AllowAccessWithRole(ctx context.Context, roles []role.ROLE) (repository.User, error)
 }
+
+type AuthDataLayerInterface interface {
+	FindOneByEmail(email string) (repository.User, error)
+}
