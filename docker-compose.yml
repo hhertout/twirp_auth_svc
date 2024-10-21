@@ -10,6 +10,7 @@ services:
       - ./protobuf:/app/protobuf
       - ./pkg:/app/pkg
       - ./migrations:/app/migrations
+      - ./lib:/app/lib
     env_file:
         - .env
 
