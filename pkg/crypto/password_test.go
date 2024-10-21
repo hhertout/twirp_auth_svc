@@ -78,9 +78,14 @@ func TestVerify_InvalidHash(t *testing.T) {
 	passwordService := crypto.PasswordService{}
 	invalidHash := "invalidhash"
 
-	valid, err := passwordService.Verify("password123", invalidHash)
-	if err == nil {
-		t.Errorf("expected error, got nil")
+	hash, err := passwordService.Hash("password123")
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	valid, err := passwordService.Verify(hash, invalidHash)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
 	}
 	if valid {
 		t.Errorf("expected invalid password, got valid")
