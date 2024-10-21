@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hhertout/twirp_auth/pkg/crypto"
+	"github.com/hhertout/twirp_auth/lib/crypto"
 )
 
 func TestNewJWTService(t *testing.T) {

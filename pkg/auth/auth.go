@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/hhertout/twirp_auth/internal/hooks"
+	"github.com/hhertout/twirp_auth/lib/crypto"
 	"github.com/hhertout/twirp_auth/pkg/auth/role"
-	"github.com/hhertout/twirp_auth/pkg/crypto"
 	"github.com/hhertout/twirp_auth/pkg/dto"
 )
 

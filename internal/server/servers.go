@@ -2,8 +2,8 @@ package server
 
 import (
 	"github.com/hhertout/twirp_auth/internal/repository"
+	"github.com/hhertout/twirp_auth/lib/crypto"
 	"github.com/hhertout/twirp_auth/pkg/auth"
-	"github.com/hhertout/twirp_auth/pkg/crypto"
 	"go.uber.org/zap"
 )
 
