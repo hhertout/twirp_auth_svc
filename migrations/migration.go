@@ -98,7 +98,7 @@ func (m *Migration) MigrateAll() error {
 					return err
 				}
 				// Save the executed migration
-				_, err = m.dbPool.Exec("INSERT INTO go_migrations (filename, migrated_at) VALUES ($1, $2)", f, time.Now())
+				_, err = m.dbPool.Exec("INSERT INTO go_migrations.migration (filename, migrated_at) VALUES ($1, $2)", f, time.Now())
 				if err != nil {
 					return err
 				}
@@ -173,8 +173,16 @@ func (m *Migration) GetMigrationFiles(basePath string) ([]string, error) {
 
 // Create migration table
 func (m *Migration) createMigrationTable() error {
+	//create migration schema if not exists
 	_, err := m.dbPool.Exec(`
-        CREATE TABLE IF NOT EXISTS go_migrations (
+        CREATE SCHEMA IF NOT EXISTS go_migrations;
+    `)
+	if err != nil {
+		return err
+	}
+
+	_, err = m.dbPool.Exec(`
+        CREATE TABLE IF NOT EXISTS go_migrations.migration (
             id SERIAL PRIMARY KEY,
             filename VARCHAR(255) NOT NULL,
             migrated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -191,7 +199,7 @@ func (m *Migration) createMigrationTable() error {
 func (m *Migration) getExecutedMigrations() ([]string, error) {
 	var res []string
 
-	rows, err := m.dbPool.Query("SELECT filename FROM go_migrations")
+	rows, err := m.dbPool.Query("SELECT filename FROM go_migrations.migration")
 	if err != nil {
 		return nil, err
 	}
