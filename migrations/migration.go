@@ -5,12 +5,12 @@ package migrations
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"io"
-	"log"
 	"os"
+	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/hhertout/twirp_auth/pkg/database"
 	"go.uber.org/zap"
@@ -41,6 +41,8 @@ func NewMigration(basePath string, logger *zap.Logger) *Migration {
 // Migrate executes a migration from a specified file.
 // Connects to the database, runs the migration, and then closes the database connection.
 // Returns an error if any occurs during the process.
+//
+// @Caution: each migration query must be separated by a double dash (--) in the migration file.
 func (m *Migration) Migrate(filename string) error {
 	db, err := database.Connect()
 	if err != nil {
@@ -69,19 +71,39 @@ func (m *Migration) MigrateAll() error {
 	}
 	m.dbPool = db.DbPool
 
+	if err := m.createMigrationTable(); err != nil {
+		return errors.New("failed to create migration table")
+	}
+
 	migrationFiles, err := m.GetMigrationFiles(m.basePath)
 	if err != nil {
 		return errors.New("failed to retrieve migration files")
 	}
+
+	migrationAlreadyExecuted, err := m.getExecutedMigrations()
+	if err != nil {
+		return errors.New("failed to retrieve executed migrations")
+	}
+
 	if len(migrationFiles) == 0 {
-		log.Println("No migration file found! To add one, run 'make migration-generate'.")
+		m.logger.Sugar().Info("No migration file found! To add one, run 'make migration-generate'.")
 	} else {
 		for _, f := range migrationFiles {
-			err := m.migrateFromFile(f)
-			if err != nil {
-				return err
+			if slices.Contains(migrationAlreadyExecuted, f) {
+				m.logger.Sugar().Infof("⏭️ Migration file already executed: %s\n", f)
+				continue
+			} else {
+				err := m.migrateFromFile(f)
+				if err != nil {
+					return err
+				}
+				// Save the executed migration
+				_, err = m.dbPool.Exec("INSERT INTO go_migrations (filename, migrated_at) VALUES ($1, $2)", f, time.Now())
+				if err != nil {
+					return err
+				}
+				m.logger.Sugar().Infof("✅ Migrated file: %v", f)
 			}
-			fmt.Println("✅ Migrated file: ", f)
 		}
 	}
 
@@ -145,6 +167,42 @@ func (m *Migration) GetMigrationFiles(basePath string) ([]string, error) {
 	}
 
 	sort.Strings(res)
+
+	return res, nil
+}
+
+// Create migration table
+func (m *Migration) createMigrationTable() error {
+	_, err := m.dbPool.Exec(`
+        CREATE TABLE IF NOT EXISTS go_migrations (
+            id SERIAL PRIMARY KEY,
+            filename VARCHAR(255) NOT NULL,
+            migrated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Retieve migration already executed
+func (m *Migration) getExecutedMigrations() ([]string, error) {
+	var res []string
+
+	rows, err := m.dbPool.Query("SELECT filename FROM go_migrations")
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var filename string
+		if err := rows.Scan(&filename); err != nil {
+			return nil, err
+		}
+		res = append(res, filename)
+	}
 
 	return res, nil
 }
